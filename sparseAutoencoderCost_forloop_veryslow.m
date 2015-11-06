@@ -41,32 +41,55 @@ b2grad = zeros(size(b2));
 % Stated differently, if we were using batch gradient descent to optimize the parameters,
 % the gradient descent update to W1 would be W1 := W1 - alpha * W1grad, and similarly for W2, b1, b2. 
 % 
-% Forward propagation
-m = size(data, 2);
 x = data;
-y = data;
-a1 = data;
-a2 = sigmoid(W1*data + repmat(b1,1,m));
-a3 = sigmoid(W2*a2 + repmat(b2,1,m));
-sp = sparsityParam;
-% Cost
-J = ((1/m)*sum(sum(0.5*(a3 - data).^2))) + ((lambda/2)*(sum(sum(W1.^2)) + sum(sum(W2.^2))));
-rho_approx = (1/m)*sum(a2,2);
-% disp(rho_approx);
-KL = sum(sp.*log(sp./rho_approx) + (1 - sp).*...
-    log((1-sp)./(1-rho_approx)));
+y = data;  %% no label, y should equal to x;
+[ndims, m] = size(data); %%ndims is the number of the features;
+deltaW1 = zeros(size(W1));
+deltab1 = zeros(size(b1));
+JW1grad = zeros(size(W1));
+Jb1grad = zeros(size(b1));
+deltaW2 = zeros(size(W2));
+deltab2 = zeros(size(b2));
+JW2grad = zeros(size(W2));
+Jb2grad = zeros(size(b2));
+%%forward propagation
+a1 = x;
+for i = 1: m
+	
+    z2(:,i) = W1 * data(:,i) + b1;
+    a2(:,i) = sigmoid(z2(:,i));
+    z3(:,i) = W2 * a2(:,i) + b2;
+    a3(:,i) = sigmoid(z3(:,i));
+end
+h_Wb = a3;
 
-cost = J + (beta * KL);
 
-% Backward propagation
-del3 = -(data - a3).*(a3.*(1-a3));
-del2 = ((W2'*del3) + repmat(beta.*((-sp./rho_approx)+...
-    ((1-sp)./(1-rho_approx))),1,m)).*(a2.*(1-a2));
 
-W2grad = ((del3*a2')/m) + (lambda*W2);
-b2grad = sum(del3,2)/m;
-W1grad = ((del2*a1')/m) + (lambda*W1);
-b1grad = sum(del2,2)/m;
+%% mean activation
+pl = sum(a2, 2) / m;
+p = sparsityParam;
+
+
+
+for i = 1:m
+	delta3 = -( y(:,i) - h_Wb(:,i) ).* (h_Wb(:,i).*(1 - h_Wb(:,i))); %% for the output layer
+    delta2 = ( W2' * delta3 + beta * (-p./pl + (1 - p)./(1 - pl)) ) .* sigmoidGrad(z2(:,i));
+
+    deltaW2 = deltaW2 + delta3 * a2(:,i)';
+    deltab2 = deltab2 + delta3;
+    deltaW1 = deltaW1 + delta2 * a1(:,i)';
+    deltab1 = deltab1 + delta2;
+end
+
+W1grad = (1/m) * deltaW1 + lambda * W1;
+b1grad = (1/m) * deltab1;
+W2grad = (1/m) * deltaW2 + lambda * W2;
+b2grad = (1/m) * deltab2;
+
+cost = (1/m) * sum( (1/2)*sum( (h_Wb - y).^2 ) ) + ...     %%cost
+       (lambda / 2) * ( sum(sum(W1.^2)) + sum(sum(W2.^2)) ) + ... %% regularization
+       beta * KL(p, pl);   %%KL divergence最小化这一惩罚因子具有使得pl 靠近 p的效果
+
 
 
 
@@ -98,7 +121,18 @@ grad = [W1grad(:) ; W2grad(:) ; b1grad(:) ; b2grad(:)];
 
 end
 
+function Sgrad = sigmoidGrad(z) %% from Andrew Ng
+	Sgrad = sigmoid(z).*(1 - sigmoid(z));
+end
 
+function Sgrad = sigmoidGrad_git(z)  %% compute sigmoid gradient from github
+	e_z = exp(-z);
+	Sgrad = e_z./((1 + e_z).^2);
+end
+
+function KL = KL(p, pl)
+	KL = sum(p * log(p./pl) + (1 - p) * log( (1 - p)./(1 - pl) ));
+end
 
 
 %-------------------------------------------------------------------

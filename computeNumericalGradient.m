@@ -18,7 +18,12 @@ numgrad = zeros(size(theta));
 %                
 % Hint: You will probably want to compute the elements of numgrad one at a time. 
 
+EPSILON = 1e-4;
+e_vec = eye(size(theta,1));
 
+for i = 1:length(theta)
+    numgrad(i) = (J(theta+EPSILON.*e_vec(:,i)) - J(theta-EPSILON.*e_vec(:,i)))/(2*EPSILON);
+end
 
 
 

@@ -44,32 +44,26 @@ b2grad = zeros(size(b2));
 % Forward propagation
 m = size(data, 2);
 x = data;
-y = data;
-a1 = data;
-a2 = sigmoid(W1*data + repmat(b1,1,m));
-a3 = sigmoid(W2*a2 + repmat(b2,1,m));
-sp = sparsityParam;
-% Cost
-J = ((1/m)*sum(sum(0.5*(a3 - data).^2))) + ((lambda/2)*(sum(sum(W1.^2)) + sum(sum(W2.^2))));
-rho_approx = (1/m)*sum(a2,2);
-% disp(rho_approx);
-KL = sum(sp.*log(sp./rho_approx) + (1 - sp).*...
-    log((1-sp)./(1-rho_approx)));
+y = data;% for no label examples the y should be equal to x
+%% data: 64*10000  W1: 25*64 W2: 64*25 b1: 25*1 b2: 64*1
+a1 = data;% 64*10000
+a2 = sigmoid(W1 * data + repmat(b1, 1, m));%% 25 * 10000
+a3 = sigmoid(W2 * a2 + repmat(b2, 1, m)); %%64 * 10000
+rho = (1/m)*sum(a2, 2);
+p = sparsityParam;
+KL = sum( p.*log(p./rho) + (1-p).*log((1-p)./(1-rho)) );
+cost = (1/m)*sum( sum(0.5 * (a3 - data).^2) )+...
+       (lambda/2)*(sum(sum(W1.^2)) + sum(sum(W2.^2)))+...
+       KL;
 
-cost = J + (beta * KL);
+%Back Propagation
+delta3 = -(data - a3).*(a3.*(1 -a3));% 64*10000//a3.*(1-a3) is the gradient of sigmoid which notes as f(z)' in the lecture
+delta2 = ( (W2'*del3) + repmat(beta.*( (-p./rho) + (1-p)./(1-rho) ) ), 1, m);%%25*10000
 
-% Backward propagation
-del3 = -(data - a3).*(a3.*(1-a3));
-del2 = ((W2'*del3) + repmat(beta.*((-sp./rho_approx)+...
-    ((1-sp)./(1-rho_approx))),1,m)).*(a2.*(1-a2));
-
-W2grad = ((del3*a2')/m) + (lambda*W2);
-b2grad = sum(del3,2)/m;
-W1grad = ((del2*a1')/m) + (lambda*W1);
-b1grad = sum(del2,2)/m;
-
-
-
+W2grad = (delta3*a2')/m + (lambda+W2); %%64*25
+b2grad = sum(delta3, 2)/m;%%64*1
+W1grad = (delta2*a1')/m + (lambda*W1);%%25*64
+b1grad = sum(delta2, 2)/m;
 
 
 

@@ -42,31 +42,28 @@ b2grad = zeros(size(b2));
 % the gradient descent update to W1 would be W1 := W1 - alpha * W1grad, and similarly for W2, b1, b2. 
 % 
 % Forward propagation
-m = size(data, 2);
-x = data;
-y = data;
 a1 = data;
-a2 = sigmoid(W1*data + repmat(b1,1,m));
-a3 = sigmoid(W2*a2 + repmat(b2,1,m));
-sp = sparsityParam;
+a2 = sigmoid(W1*data + repmat(b1,1,size(data,2)));
+a3 = sigmoid(W2*a2 + repmat(b2,1,size(data,2)));
+
 % Cost
-J = ((1/m)*sum(sum(0.5*(a3 - data).^2))) + ((lambda/2)*(sum(sum(W1.^2)) + sum(sum(W2.^2))));
-rho_approx = (1/m)*sum(a2,2);
+J = ((1/size(data,2))*sum(sum(0.5*(a3 - data).^2))) + ((lambda/2)*(sum(sum(W1.^2)) + sum(sum(W2.^2))));
+rho_approx = (1/size(data,2))*sum(a2,2);
 % disp(rho_approx);
-KL = sum(sp.*log(sp./rho_approx) + (1 - sp).*...
-    log((1-sp)./(1-rho_approx)));
+KL = sum(sparsityParam.*log(sparsityParam./rho_approx) + (1 - sparsityParam).*...
+    log((1-sparsityParam)./(1-rho_approx)));
 
 cost = J + (beta * KL);
 
 % Backward propagation
 del3 = -(data - a3).*(a3.*(1-a3));
-del2 = ((W2'*del3) + repmat(beta.*((-sp./rho_approx)+...
-    ((1-sp)./(1-rho_approx))),1,m)).*(a2.*(1-a2));
+del2 = ((W2'*del3) + repmat(beta.*((-sparsityParam./rho_approx)+...
+    ((1-sparsityParam)./(1-rho_approx))),1,size(data,2))).*(a2.*(1-a2));
 
-W2grad = ((del3*a2')/m) + (lambda*W2);
-b2grad = sum(del3,2)/m;
-W1grad = ((del2*a1')/m) + (lambda*W1);
-b1grad = sum(del2,2)/m;
+W2grad = ((del3*a2')/size(data,2)) + (lambda*W2);
+b2grad = sum(del3,2)/size(data,2);
+W1grad = ((del2*a1')/size(data,2)) + (lambda*W1);
+b1grad = sum(del2,2)/size(data,2);
 
 
 

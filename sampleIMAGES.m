@@ -23,7 +23,12 @@ patches = zeros(patchsize*patchsize, numpatches);
 %  more details.) As a second example, IMAGES(21:30,21:30,1) is an image
 %  patch corresponding to the pixels in the block (21,21) to (30,30) of
 %  Image 1
-
+for i = 1:numpatches
+	x = randi(512 - 8 + 1);
+	y = randi(512 - 8 + 1);
+	sample = IMAGES(x:x+7, y:y+7, randi(10));
+	patches(:,i) = sample(:);
+end
 
 
 
